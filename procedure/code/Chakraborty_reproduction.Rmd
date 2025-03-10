@@ -37,8 +37,9 @@ if(!require(here)){
   require(here)
 }
 
-groundhog.day <- "2023-06-26"
+groundhog.day <- "2025-03-08"
 set.groundhog.folder(here("data", "scratch", "groundhog"))
+groundhog.library(packages, groundhog.day)
 ```
 
 # DATA
@@ -49,6 +50,7 @@ Details on ACS data collection can be found at <https://www.census.gov/topics/he
 
 ```{r}
  # Query disability demographic data with geographic boundaries
+
 acs <- get_acs(geography = "county",
   table = "S1810",
   year = 2018,
