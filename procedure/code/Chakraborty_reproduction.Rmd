@@ -179,16 +179,45 @@ acs_covid[is.na(acs_covid$apov_pct), ]$apov_pct <- 0
 
 COVID incidence Rate Map
 ```{r}
-tm_covid_rates <- tm_shape(acs_covid) +
-  tm_polygons("covid_rate",
-    title = "COVID-19 Cases per 100,000 people\n(22 January 2020 to 1 August 2020)",
-    style = "quantile",
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "Oranges",
-  ) +
+# tm_covid_rates <- tm_shape(acs_covid) +
+#   tm_polygons("covid_rate",
+#     title = "COVID-19 Cases per 100,000 people\n(22 January 2020 to 1 August 2020)",
+#     style = "quantile",
+#     border.alpha = .2,
+#     lwd = 0.2,
+#     palette = "Oranges",
+#   ) +
+#   tm_shape(state) +
+#     tm_borders("grey", lwd = .5) +
+#   tm_layout(
+#     legend.position = c("left", "bottom"),
+#     legend.title.size = 0.8,
+#     legend.text.size = 0.5
+#   )
+# 
+# tm_covid_rates
+```
+
+Updated COVID Incidence Rate TMAP 
+```{r}
+# Set tmap mode explicitly if needed (e.g., for interactive maps)
+# tmap_mode("plot")  # or "view"
+
+tm_covid_rates <- 
+  tm_shape(acs_covid) +
+    tm_polygons(
+      col = "covid_rate",
+      title = "COVID-19 Cases per 100,000 people\n(22 Jan 2020 to 1 Aug 2020)",
+      style = "quantile",
+      border.alpha = 0.2,
+      lwd = 0.2,
+      palette = "Oranges"
+    ) +
   tm_shape(state) +
-    tm_borders("grey", lwd = .5) +
+    tm_borders(
+      col = "grey",
+      lwd = 0.5
+    ) +
   tm_layout(
     legend.position = c("left", "bottom"),
     legend.title.size = 0.8,
@@ -198,18 +227,48 @@ tm_covid_rates <- tm_shape(acs_covid) +
 tm_covid_rates
 ```
 
+
+
 Disability Map
 ```{r map-disability-rates, message = FALSE}
-tm_disability_rates <- tm_shape(acs_covid) +
-  tm_polygons("dis_pct",
-    title = "Percent of People with Disability\n(ACS 2014-2018)",
-    style = "quantile",
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "Oranges"
-  ) +
+# tm_disability_rates <- tm_shape(acs_covid) +
+#   tm_polygons("dis_pct",
+#     title = "Percent of People with Disability\n(ACS 2014-2018)",
+#     style = "quantile",
+#     col_alpha = .2,
+#     lwd = 0.2,
+#     palette = "Oranges"
+#   ) +
+#   tm_shape(state) +
+#   tm_borders("grey", lwd = .5) +
+#   tm_layout(
+#     legend.position = c("left", "bottom"),
+#     legend.title.size = 0.8,
+#     legend.text.size = 0.5
+#   )
+# 
+# tm_disability_rates
+
+library(tmap)
+
+# Set tmap mode explicitly if needed
+# tmap_mode("plot")  # or "view"
+
+tm_disability_rates <- 
+  tm_shape(acs_covid) +
+    tm_polygons(
+      col = "dis_pct",
+      title = "Percent of People with Disability\n(ACS 2014–2018)",
+      style = "quantile",
+      alpha = 1,
+      lwd = 0.2,
+      palette = "Oranges"
+    ) +
   tm_shape(state) +
-  tm_borders("grey", lwd = .5) +
+    tm_borders(
+      col = "grey",
+      lwd = 0.2
+    ) +
   tm_layout(
     legend.position = c("left", "bottom"),
     legend.title.size = 0.8,
@@ -217,6 +276,8 @@ tm_disability_rates <- tm_shape(acs_covid) +
   )
 
 tm_disability_rates
+
+
 ```
 ```{r compare-descriptive-stats}
 # load original table 1 results
@@ -714,23 +775,54 @@ class_freq$label <- paste0(class_freq$loc_class,
                            ")")
 
 # Map Local Relative Risk scores
-tm_spatialepi_local_risk_class <- tm_shape(acs_covid) +
-  tm_polygons("loc_class",
-    title = "Local Relative Risk Class",
-    border.col = "white",
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "Oranges",
-    style = "cat",
-    labels = class_freq$label
-  ) +
+# tm_spatialepi_local_risk_class <- tm_shape(acs_covid) +
+#   tm_polygons("loc_class",
+#     title = "Local Relative Risk Class",
+#     border.col = "white",
+#     border.alpha = .2,
+#     lwd = 0.2,
+#     palette = "Oranges",
+#     style = "cat",
+#     labels = class_freq$label
+#   ) +
+#   tm_shape(state) +
+#   tm_borders("grey", lwd = .5) +
+#   tm_layout(
+#     legend.position = c("left", "bottom"),
+#     legend.title.size = 0.8,
+#     legend.text.size = 0.5
+#   )
+
+library(tmap)
+
+# Set tmap mode explicitly if needed
+# tmap_mode("plot")  # or "view"
+
+tm_spatialepi_local_risk_class <- 
+  tm_shape(acs_covid) +
+    tm_polygons(
+      col = "loc_class",
+      title = "Local Relative Risk Class",
+      border.col = "white",
+      border.alpha = 0.2,
+      lwd = 0.2,
+      palette = "Oranges",
+      style = "cat",
+      labels = class_freq$label
+    ) +
   tm_shape(state) +
-  tm_borders("grey", lwd = .5) +
+    tm_borders(
+      col = "grey",
+      lwd = 0.5
+    ) +
   tm_layout(
     legend.position = c("left", "bottom"),
     legend.title.size = 0.8,
     legend.text.size = 0.5
   )
+
+tm_spatialepi_local_risk_class
+
 
 rm(class_freq)
 
@@ -753,23 +845,55 @@ class_freq$label <- paste0(class_freq$cluster_class,
                            ")")
 
 # map cluster relative risk scores
-tm_spatialepi_cluster_risk_class <- tm_shape(acs_covid) +
-  tm_polygons("cluster_class",
-    title = "Cluster Relative Risk Class",
-    border.col = "white",
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "Oranges",
-    style = "cat",
-    labels = class_freq$label
-  ) +
+# tm_spatialepi_cluster_risk_class <- tm_shape(acs_covid) +
+#   tm_polygons("cluster_class",
+#     title = "Cluster Relative Risk Class",
+#     border.col = "white",
+#     border.alpha = .2,
+#     lwd = 0.2,
+#     palette = "Oranges",
+#     style = "cat",
+#     labels = class_freq$label
+#   ) +
+#   tm_shape(state) +
+#   tm_borders("grey", lwd = .5) +
+#   tm_layout(
+#     legend.position = c("left", "bottom"),
+#     legend.title.size = 0.8,
+#     legend.text.size = 0.5
+#   )
+
+
+library(tmap)
+
+# Set tmap mode explicitly if needed
+# tmap_mode("plot")  # or "view"
+
+tm_spatialepi_cluster_risk_class <- 
+  tm_shape(acs_covid) +
+    tm_polygons(
+      col = "cluster_class",
+      title = "Cluster Relative Risk Class",
+      border.col = "white",
+      border.alpha = 0.2,
+      lwd = 0.2,
+      palette = "Oranges",
+      style = "cat",
+      labels = class_freq$label
+    ) +
   tm_shape(state) +
-  tm_borders("grey", lwd = .5) +
+    tm_borders(
+      col = "grey",
+      lwd = 0.5
+    ) +
   tm_layout(
     legend.position = c("left", "bottom"),
     legend.title.size = 0.8,
     legend.text.size = 0.5
   )
+
+tm_spatialepi_cluster_risk_class
+
 
 rm(class_freq)
 
@@ -822,8 +946,10 @@ The `sat_scan_rpr.txt` file reports the model parameters used in addition to res
 # load author-provided data
 author_col <- read.dbf(here("data", "raw", "public", "SatScan_output.dbf")) %>%
   select(LOC_ID, or_rel_risk = REL_RISK)
+here()
 
 # load SaTScan reproduced data
+# Download satscan data
 satscan_rpr_col <- read_sf(here("data", "raw", "public", "sat_scan_rpr.col.shp"))
 
 # how many observations?
