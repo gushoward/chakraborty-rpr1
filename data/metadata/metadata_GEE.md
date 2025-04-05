@@ -1,5 +1,5 @@
-- `Title`: Title of data source
-- `Abstract`: Brief description of the data source
+- `Title`: Dataset for Generalized Estimating Equation Modeling
+- `Abstract`: This dataset contains the processed dependent data on COVID-19 incidence, spatial clustering data (state and COVID-19 cluster relative risk), and independent variables (demographic sub-categories of people with disability), used for generalized estimating equation modeling in our reproduction analysis.
 - `Spatial Coverage`: Specify the geographic extent of your study. This may be a place name and link to a feature in a gazetteer like GeoNames or OpenStreetMap, or a well known text (WKT) representation of a bounding box.
 - `Spatial Resolution`: Specify the spatial resolution as a scale factor, description of the level of detail of each unit of observation (including administrative level of administrative areas), and/or or distance of a raster GRID size
 - `Spatial Representation Type`: Specify the model of spatial data representation, e.g. one of `vector`, `grid`, `textTable`, `tin` (triangulated irregular network), etc. If the type is `vector`, also specify the geometry type as in the OGC Simple Feature Access standard (https://www.ogc.org/publications/standard/sfa/) , e.g. `POINT`, `LINESTRING`, `MULTIPOLYGON`, etc. 
