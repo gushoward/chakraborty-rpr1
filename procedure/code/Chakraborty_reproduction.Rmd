@@ -44,6 +44,15 @@ groundhog.library(packages, groundhog.day)
 
 # DATA
 
+# Study metadata
+Key words: COVID-19, Disability, Race/ethnicity, Poverty, Reproducibility
+Date created: 
+Spatial Coverage: Continental United States
+Spatial Resolution: US Counties
+Spatial Reference System: Contiguous USA Albers Equal Area projection EPSG:5070
+Temporal Coverage: From 1/22/2020 to 8/1/2020
+Temporal Resolution: Rates were collected as one temporal unit.
+
 ## ACS data
 The American Community Survey (ACS) five-year estimate (2014-2018) variables used in the study are outlined in the table below.
 Details on ACS data collection can be found at <https://www.census.gov/topics/health/disability/guidance/data-collection-acs.html>
@@ -84,7 +93,7 @@ saveRDS(state, here("data", "raw", "public", "state.RDS"))
 
 ## Data Transformations
 
-Initial Study does not include Alaska, Hawaii, or Puerto Rico. 
+Initial Study does not include Alaska, Hawaii, or Puerto Rico. Data on people with disabilities in poverty is derived from a different census table (C18130) than data on people with disabilities and age, race, ethnicity, age, and biological sex (S1810). 
 ```{r}
 # transform coordinate system and fix geometries
 acs <- filter(acs, !STATEFP %in% c("02", "15", "72")) %>%
@@ -136,7 +145,7 @@ acs_derived <- acs_derived %>%
 ```
 
 ## COVID Data
-
+The data includes an estimate of the total population (POP_ESTIMA) and confirmed COVID-19 cases (Confirmed). The COVID-19 case data expresses cumulative count of reported COVID-19 from 1/22/2020 to 8/1/2020. Versions of the data can be found at the John Hopkins CCSE COVID-19 Data Repository (https://github.com/CSSEGISandData/COVID-19).
 ```{r}
 covid <- read_sf(here("data", "raw", "public", "covidcase080120.gpkg"))
 
@@ -177,7 +186,7 @@ acs_covid[is.na(acs_covid$bpov_pct), ]$bpov_pct <- 0
 acs_covid[is.na(acs_covid$apov_pct), ]$apov_pct <- 0
 ```
 
-COVID incidence Rate Map
+<!-- COVID incidence Rate Map -->
 ```{r}
 # tm_covid_rates <- tm_shape(acs_covid) +
 #   tm_polygons("covid_rate",
@@ -198,7 +207,8 @@ COVID incidence Rate Map
 # tm_covid_rates
 ```
 
-Updated COVID Incidence Rate TMAP 
+<!-- Updated  -->
+COVID Incidence Rate TMAP 
 ```{r}
 # Set tmap mode explicitly if needed (e.g., for interactive maps)
 # tmap_mode("plot")  # or "view"
@@ -338,7 +348,7 @@ pearsons_r %>%
   kable_styling(full_width = FALSE)
 ```
 
-Compare the reproduced Pearson's *r* correlation coefficients to the original study's Pearson's *r* correlation coefficients.
+Comparison of the reproduced Pearson's *r* correlation coefficients to the original study's Pearson's *r* correlation coefficients.
 Stars indicates the significance level with two stars for `p < 0.01` and one star for `p < 0.05`.
 Correlation difference `rp_r_diff` is calculated between the reproduction study `rp_r` and original study `or_r` as `rp_r_diff = rp_r - or_r` Direction difference `rp_dir_diff` is calculated as `(rp_r > 0) - (or_r > 0)`, giving `0` if both coefficients have the same direction, `1` if the reproduction is positive and the original is negative, and `-1` if the reproduction is negative but the original is positive.
 
@@ -424,7 +434,7 @@ original_gee %>%
 We found that 13 counties had incorrect COVID-19 incidence scores, and the scores seem to be transposed from other counties, such that the overall descriptive statistics were accurate but the correlation coefficients were inaccurate.
 This finding implies that subsequent analyses using the COVID-19 Incidence rate will be slightly different and more accurate in this reproduction study than in the original study.
 
-**Unplanned deviation for reproduction:** Join the original author's Incidence data into our reproduction data frame so that we can later test for sensitivity to this error.
+**Unplanned deviation for reproduction:** Original author's Incidence data joined into our reproduction data frame so that we can later test for sensitivity to this error.
 Then report any counties for which the reproduced COVID incidence rate differs from the original author's COVID incidence rate.
 
 ```{r join-incidence-rate}
@@ -452,7 +462,7 @@ acs_covid %>%
   kable(caption = "Original incidence rate joined to reproduction data") %>% kable_styling()
 ```
 
-The join worked, highlighting the same 13 counties with inconsistent incidence rates.
+The join highlights the same 13 counties with inconsistent incidence rates.
 This also confirms that our reproduced dependent variable is identical to the original dependent variable with the exception of these three counties.
 
 ## Bivariate nonparametric correlation analysis
@@ -478,7 +488,7 @@ spearmans_rho <- acs_covid %>%
   filter(variable != "covid_rate")
 ```
 
-Compare the Spearman's *rho* correlation coefficients to the reproduced Pearson's *r* correlation coefficients.
+CSpearman's *rho* correlation coefficients comparee to the reproduced Pearson's *r* correlation coefficients.
 Differences are calculated as *Spearman's Rho* - *Pearson's R*.
 
 ```{r compare-spearmans-correlation}
@@ -531,20 +541,10 @@ rm(spearmans_rho, pearsons_r, correlations, table1, df)
 
 ## Kulldorff spatial scan statistic
 
-Although there were no major geographic *transformations* in this study, *geographic grouping criteria* for the generalized estimating equation (GEE) models are defined as a combination of states and COVID-19 risk, which is based on the Kulldorff spatial scan statistic for geographic clusters of high COVID-19 incidence.
-The scan statistic in SaTScan used spherical great circle distance calculations based upon the latitude and longitude coordinates of the centroid of each county.
-For this purpose, we have used the `X` and `Y` attributes provided as geographic variables with ACS data.
+Although this study did not involve major geographic transformations, it employed specific geographic grouping criteria for the generalized estimating equation (GEE) models, combining state boundaries with COVID-19 risk levels identified using the Kulldorff spatial scan statistic. This statistic, implemented in the SaTScan software, detects spatial clusters of high COVID-19 incidence using spherical great-circle distance calculations based on county centroid coordinates. The geographic coordinates (`X` and `Y` attributes) used for these calculations were sourced from the ACS dataset.
 
-We use a Kulldorff spatial scan statistic to detect spatial clusters of high COVID-19 incidence (workflow step 6).
-The statistic uses a Monte Carlo simulation to calculate statistical significance, and therefore may not produce identical results each time.
+The Kulldorff scan statistic relies on Monte Carlo simulations to determine the statistical significance of clusters, leading to potentially varying results across runs. While the original manuscript specifies use of a Poisson model in SaTScan, other model parameters appear to follow the software's defaults. These include discrete, spatial-only modeling (excluding temporal analysis), a maximum cluster size of 50% of the population at risk, GINI-optimized cluster selection, and non-overlapping secondary clusters. The "P-value Cutoff" setting did not appear in version 9.6, implying that only the default setting was available at the time of analysis.
 
-The original study uses SaTScan software to implement the Kulldorff spatial scan statistic model.
-In SaTScan, models may be specified with many parameters having significant implications for results.
-The original manuscript only specifies that Poisson model should be used.
-We can also intuit that the model is discrete (locations are stationary and non-random), and spatial only (there is no temporal dimension).
-The author-provided SaTScan results `SatScan_results.txt` contains additional parameters which appear to adhere closely to the software's default settings.
-These include the maximum cluster size of "50 percent of population at risk", and the "GINI optimized cluster collection" and "no geographical overlap" options for detecting secondary clusters.
-The "P-value Cutoff" for significant clusters option did not appear in the v9.6 output, suggesting that the software only allowed the default "no" option for this at the time of the original study.
 
 SaTScan software can also output two versions of geographic data:
 
@@ -1368,7 +1368,7 @@ gee_data <- acs_covid %>%
     z_pct_75 = scale(pct_75),
     z_male_pct = scale(male_pct),
     z_female_pct = scale(female_pct)
-  ) %>%  
+  ) %>%
   filter(covid_rate > 0) # moved filtering from before z-score calculation
 ```
 
@@ -1380,7 +1380,7 @@ Compare independent variables for GEE models by subtracting the original values 
 # identical order of observations (counties)
 gee_diff <-
   (gee_data %>%
-    st_drop_geometry() %>%  
+    st_drop_geometry() %>%
     arrange(as.integer(fips)) %>%
     select(starts_with("z_"))  -
   original_gee %>%
@@ -1643,25 +1643,10 @@ geewhisker_fig
 rm(t2whisker)
 ```
 
-The figure above illustrates five model variations, starting with the results published in the original study.
-The next two models make incremental adjustments to the research design and are most compatible with the goals of a reproduction study.
+The figure above presents five variations of the original model, beginning with the results reported in the initial study. The first two modified models make incremental changes that align closely with the objectives of a reproduction study. The most substantial differences arose from a change in computational environment—from SPSS to the *geepack* package in R—which significantly altered coefficient magnitudes. Notably, the positive coefficient for Hispanic individuals dropped below its original confidence interval, while the negative coefficients for "Above poverty level" and "Male" increased to the outer bounds of their original intervals. In contrast, correcting a known error in COVID-19 incidence rates for 13 counties had minimal impact on the coefficient estimates.
 
-The greatest differences were produced using the same input data in different computational environments, caused by switching the computational environment from SPSS to geepack in R.
-This switch decreased the magnitude of most coefficients, reducing the positive Hispanic coefficient below its original confidence interval and increasing the negative Above poverty level and Male coefficients to the limits of their original confidence intervals.
+More substantial reanalyses involved redefining COVID-19 clusters—first using all counties in the SaTScan GINI-Optimized clusters and then using counties from the SpatialEpi clusters. These revisions further reduced the size of most coefficients, likely due to improved spatial dependence control. The most notable changes occurred in the Ethnicity model, where the Hispanic and Non-Hispanic White coefficients fell beyond their original confidence intervals, and the Hispanic coefficient lost statistical significance. The "Above poverty level" and "Male" coefficients also increased beyond their initial confidence bounds. Despite these shifts, several coefficients remained robust and significant across all changes, including those for Black, Native American, Non-Hispanic non-White, Below poverty level, and Female individuals—groups associated with greater vulnerability. Meanwhile, consistently negative coefficients for White, Non-Hispanic White, Above poverty level, and Male individuals suggest intersections with less vulnerable identities. Interestingly, both coefficients for elderly individuals with disabilities also remained robustly negative, contrary to expectations.
 
-Compared to the change in computational environment, fixing the error in the COVID-19 incidence rate of 13 counties had very little effect on coefficient estimates.
-
-Our more significant adjustments could be considered reanalyses, in which we re-conceptualized COVID-19 clusters first as all counties included in SaTScan GINI-Optimized clusters, and second as all counties included in SpatialEpi clusters.
-These two changes further decreased the magnitude of most coefficients as they likely more effectively fulfilled the purpose of controlling for spatial dependence.
-The shifts were most signficant for the Ethnicity model, in which the Hispanic and Non-Hispanic white coefficients lost magnitude beyond the original confidence interval and the Hispanic coefficient is no longer significant.
-Secondarily, the negative Above poverty level and Male coefficients both increased beyond the range of the original confidence intervals.
-
-Overall, we can see that some coefficients remained significant and robust to changes in computational environment, data errors, and clustering criteria.
-Robustly positive coefficients included Black, Native American, Non-Hispanic non-White, Below poverty level, and Female.
-The Asian and Age 5-17 coefficients also remained just above 0.
-All of these categories of people with disabilities would be considered intersectional with factors of vulnerability.
-Conversely, some robustly negative coefficients indicate people with disabilities intersecting with non-vulnerable identities, such as white, Non-Hispanic White, Above poverty level, and Male.
-Counter-intuitively, the two coefficients for elderly people with disability were also robustly negative.
 
 ### Interpret GEE Model
 
@@ -1722,9 +1707,9 @@ Calculate variance, covariance, correlation, and weights
 
 ```{r weights}
 # calculate k number of observations per cluster
-gee_resid <- gee_resid %>% 
-  group_by(ss_clusID) %>% 
-  mutate(k = n()) %>% 
+gee_resid <- gee_resid %>%
+  group_by(ss_clusID) %>%
+  mutate(k = n()) %>%
   ungroup()
 
 grps <- gee_resid %>% st_drop_geometry() %>% select(ss_clusID, residual = residual)
@@ -1750,7 +1735,7 @@ c <- sum(outer(grps$residual, grps$residual, "*") * m, na.rm = TRUE) / covar_d
 r <- c / v
 
 # calculate weights
-gee_resid <- gee_resid %>% 
+gee_resid <- gee_resid %>%
   mutate(w = 1 / (1 + (k - 1) * r))
 ```
 
@@ -1825,16 +1810,6 @@ No **outliers** were analyzed or accounted for in the study.
 No **weights** were applied in the study.
 
 ## Unplanned deviations
-
-
-### Rationale for updated report
-
-This is the second version of our reproduction report.
-The first, registered at <https://doi.org/10.17605/OSF.IO/647EX> on July 22, 2022, represented our best knowledge of the study at that time.
-Subsequently, we improved our approaches to reproduction studies by revising pre-analysis plans and post-analysis reports into legible code RMarkdown documents.
-This change prompted us to re-order some content to flow more linearly with the sequencing required by code, and prompted us to digitize (if necessary) and import results from the original research into Rmarkdown for quantitative comparison to the reproduction study.
-These comparisons led to further insights and research into discrepancies between the original and reproduced Pearsons's correlations between various forms of the Kulldorff spatial scan statistic.
-We also discovered an improved method for comparing the results of generalized linear models by plotting all of the model results on a dot-wisker graph using the dotwhisker package.
 
 
 
