@@ -36,9 +36,11 @@ if(!require(here)){
   install.packages("here")
   require(here)
 }
+```
 
+
+```{r}
 groundhog.day <- "2025-03-08"
-set.groundhog.folder(here("data", "scratch", "groundhog"))
 groundhog.library(packages, groundhog.day)
 ```
 
@@ -57,7 +59,7 @@ Temporal Resolution: Rates were collected as one temporal unit.
 The American Community Survey (ACS) five-year estimate (2014-2018) variables used in the study are outlined in the table below.
 Details on ACS data collection can be found at <https://www.census.gov/topics/health/disability/guidance/data-collection-acs.html>
 
-```{r}
+```{r eval = FALSE}
  # Query disability demographic data with geographic boundaries
 
 acs <- get_acs(geography = "county",
@@ -89,6 +91,13 @@ state <- get_acs(geography = "state",
 saveRDS(acs, here("data", "raw", "public", "acs.RDS"))
 saveRDS(acs_pov, here("data", "raw", "public", "acs_pov.RDS"))
 saveRDS(state, here("data", "raw", "public", "state.RDS"))
+```
+
+
+```{r}
+acs <- readRDS(here("data", "raw", "public", "acs.RDS"))
+acs_pov <- readRDS(here("data", "raw", "public", "acs_pov.RDS"))
+state <- readRDS(here("data", "raw", "public", "state.RDS"))
 ```
 
 ## Data Transformations
@@ -145,7 +154,9 @@ acs_derived <- acs_derived %>%
 ```
 
 ## COVID Data
+
 The data includes an estimate of the total population (POP_ESTIMA) and confirmed COVID-19 cases (Confirmed). The COVID-19 case data expresses cumulative count of reported COVID-19 from 1/22/2020 to 8/1/2020. Versions of the data can be found at the John Hopkins CCSE COVID-19 Data Repository (https://github.com/CSSEGISandData/COVID-19).
+
 ```{r}
 covid <- read_sf(here("data", "raw", "public", "covidcase080120.gpkg"))
 
@@ -177,6 +188,7 @@ rm(acs, acs_derived, covid)
 ```
 
 missing data
+
 ```{r}
 # county with missing data
 filter(acs_covid, is.na(bpov_pct)) %>% st_drop_geometry() %>% kable()
@@ -187,6 +199,7 @@ acs_covid[is.na(acs_covid$apov_pct), ]$apov_pct <- 0
 ```
 
 <!-- COVID incidence Rate Map -->
+
 ```{r}
 # tm_covid_rates <- tm_shape(acs_covid) +
 #   tm_polygons("covid_rate",
@@ -240,6 +253,7 @@ tm_covid_rates
 
 
 Disability Map
+
 ```{r map-disability-rates, message = FALSE}
 # tm_disability_rates <- tm_shape(acs_covid) +
 #   tm_polygons("dis_pct",
@@ -289,20 +303,7 @@ tm_disability_rates
 
 
 ```
-```{r compare-descriptive-stats}
-# load original table 1 results
-table1 <- read.csv(here("data", "raw", "public", "table1.csv"))
 
-# subtract original results from reproduced results
-(select(acs_covid_stats, min, max, mean, SD) -
-  select(table1, min, max, mean, SD)) %>%
-  kable(caption = "Descriptive Statistics Comparison",
-        align = "c") %>%
-  column_spec(2:5, width = "4em") %>%
-  kable_styling(full_width = FALSE)
-
-rm(acs_covid_stats)
-```
 
 ## Summary Stats
 ```{r}
@@ -321,6 +322,22 @@ acs_covid_stats %>%
   column_spec(2:6, width_min = "5em") %>%
   column_spec(7, width_min = "2em") %>%
   kable_styling(full_width = FALSE)
+```
+
+
+```{r compare-descriptive-stats}
+# load original table 1 results
+table1 <- read.csv(here("data", "raw", "public", "table1.csv"))
+
+# subtract original results from reproduced results
+(select(acs_covid_stats, min, max, mean, SD) -
+  select(table1, min, max, mean, SD)) %>%
+  kable(caption = "Descriptive Statistics Comparison",
+        align = "c") %>%
+  column_spec(2:5, width = "4em") %>%
+  kable_styling(full_width = FALSE)
+
+rm(acs_covid_stats)
 ```
 
 ## Pearsons
@@ -604,11 +621,15 @@ print(
 )
 rm(covid_geo, expected.cases, start_time)
 
+```
+
+```{r eval = FALSE}
 # save results in a file appended with the current date
 saveRDS(covid_kulldorff,
   file = here("data", "derived", "public", paste0("covid_kulldorff_", Sys.Date(), ".RDS"))
 )
 ```
+
 
 Load pre-calculated Kulldorff spatial scan results.
 
@@ -944,9 +965,8 @@ The `sat_scan_rpr.txt` file reports the model parameters used in addition to res
 
 ```{r load-satscan-col}
 # load author-provided data
-author_col <- read.dbf(here("data", "raw", "public", "SatScan_output.dbf")) %>%
+author_col <- read.dbf(here("data", "raw", "public","SatScan_output.dbf")) %>%
   select(LOC_ID, or_rel_risk = REL_RISK)
-here()
 
 # load SaTScan reproduced data
 # Download satscan data
@@ -1059,7 +1079,7 @@ In the map above, clusters containing only one county have no visible circle.
 Clusters containing two counties are encircled, but have no label.
 Clusters containing three or more counties are encircled and labelled with the number of counties.
 
-Note that this version of data only includes the 96 counties defining cluster centers, visualized with fill colors above.
+Above version of data only includes the 96 counties defining cluster centers, visualized with fill colors above.
 The data excludes all of the non-center counties in clusters with more than one county.
 The extent of these larger clusters is visualized by unfilled circles defined by cluster radii.
 
@@ -1426,9 +1446,6 @@ A separate hypothesis was formulated for each type of subcategorization of PwDs,
 
 As specified by the author, "GEEs extend the generalized linear model to accommodate clustered data, in addition to relaxing several assumptions of traditional regression (i.e., normality)".
 Additionally, the author noted that "clusters of observations must be defined based on the assumption that observations within a cluster are correlated while observations from different clusters are independent." All five GEE models were specified with exchangeable correlation matrices, gamma distributions, and logarithmic link function.
-These specifications were chosen after testing each alternative and choosing the models with the best quasilikelihood under the independence model criterion (QIC).
-
-This accomplishes the step 11 of the workflow diagram.
 
 Generalized Estimating Equation parameters:
 
@@ -1787,29 +1804,6 @@ ggsave(here("results", "figures", "plot_coefficients.png"), geewhisker_fig)
 # Discussion
 
 ## Bias and threats to validity
-
-Given the research design and primary data to be collected and/or secondary data to be used, discuss common threats to validity and the approach to mitigating those threats, with an emphasis on geographic threats to validity.
-
-**Edge effects** were not accounted for in the analysis.
-
-The analysis created **spatial subgroups** based on **spatial clustering**.
-The purpose of this grouping was to control for **spatial heterogeneity** between regions (defined as states) and **spatial correlation** within regions using GEE models.
-The spatial subgroups based on state and COVID-19 risk were specified in the attribute transformation subsection above.
-
-This analysis accounted for **first order spatial effects** of regional difference by including states in the clustering criteria for GEE models.
-The analysis accounted for some **second order spatial effects** by including a relative risk score for COVID-19 spatial clusters in the clustering criteria for GEE models.
-The analysis did not account for **spatial anisotropies**, as the Kulldorff spatial scan statistic was constrained to circular non-directional clusters.
-
-The study used a cross-sectional design, aggregating cases across the full **temporal extent** from 1/22/2020-8/1/2020.
-The **temporal support** was inconsequential, as both the COVID-19 cases and disability sociodemographic data were aggregated across time for the full temporal extent.
-**Temporal effects** were not conceptualized, measured, or accounted for.
-There is potential for error and uncertainty in areas experiencing rapid socio-demographic change due to the **temporal coverage** of the socio-demographic data, as it was derived from ACS estimates from 2014 to 2018, prior to the onset of the COVID-19 pandemic.
-
-There was no documentation of any **data exclusion** based on attribute criteria in the original study.
-No **outliers** were analyzed or accounted for in the study.
-No **weights** were applied in the study.
-
-## Unplanned deviations
 
 
 
