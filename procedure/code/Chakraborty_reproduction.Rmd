@@ -46,7 +46,7 @@ groundhog.library(packages, groundhog.day)
 
 # Study metadata
 Key words: COVID-19, Disability, Race/ethnicity, Poverty, Reproducibility
-Date created: 
+Subject: Social and Behavioral Sciences: Geography: Geographic Information Sciences
 Spatial Coverage: Continental United States
 Spatial Resolution: US Counties
 Spatial Reference System: Contiguous USA Albers Equal Area projection EPSG:5070

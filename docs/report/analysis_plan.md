@@ -1,5 +1,7 @@
 # Title of Study
 
+
+
 ### Authors
 
 - First Name Last Name\*, email address, @githubname, ORCID link, affiliated institution(s)
@@ -9,66 +11,39 @@
 
 ### Abstract
 
-Write a brief abstract about your research project.
+Chakraborty (2021) examines the relationship between COVID-19 incidence rates and the percentage of people with disabilities across U.S. counties, considering socio-demographic factors like race, ethnicity, poverty status, age, and sex. Using bivariate correlations and generalized estimating equation (GEE) models, the study finds significant positive associations between COVID-19 rates and socially vulnerable populations. This reproduction study aims to verify Chakraborty’s findings for policy, research, and educational purposes by replicating all analyses, including county-level COVID-19 distributions, statistical correlations, and GEE models. The data and code are publicly available on GitHub, ensuring transparency and accessibility for further study.
 
-If the project is a reproduction or replication study, include a declaration of the study type with a full reference to the original study.
-For example:
 
-This study is a *replication* of:
+This is a reproduction study of 'Chakraborty, J. 2021. Social inequities in the distribution of COVID-19: An intra-categorical analysis of people with disabilities in the U.S. Disability and Health Journal 14:1-5. https://doi.org/10.1016/j.dhjo.2020.101007.'
 
-> citation to prior study
+The goeal of the replication is to understand the links between race/ethnicity and disability and COVID-19 rates.
 
-A graphical abstract of the study could also be included as an image here.
+### Original and Replication Study metadata
 
-### Study metadata
-
-- `Key words`: Comma-separated list of keywords (tags) for searchability. Geographers often use one or two keywords each for: theory, geographic context, and methods.
-- `Subject`: select from the [BePress Taxonomy](http://digitalcommons.bepress.com/cgi/viewcontent.cgi?article=1008&context=reference)
-- `Date created`: date when project was started
-- `Date modified`: date of most recent revision
-- `Spatial Coverage`: Specify the geographic extent of your study. This may be a place name and link to a feature in a gazetteer like GeoNames or OpenStreetMap, or a well known text (WKT) representation of a bounding box.
-- `Spatial Resolution`: Specify the spatial resolution as a scale factor, description of the level of detail of each unit of observation (including administrative level of administrative areas), and/or or distance of a raster GRID size
-- `Spatial Reference System`: Specify the geographic or projected coordinate system for the study, e.g. EPSG:4326
-- `Temporal Coverage`: Specify the temporal extent of your study---i.e. the range of time represented by the data observations.
-- `Temporal Resolution`: Specify the temporal resolution of your study---i.e. the duration of time for which each observation represents or the revisit period for repeated observations
-- `Funding Name`: name of funding for the project
-- `Funding Title`: title of project grant
-- `Award info URI`: web address for award information
-- `Award number`: award number
-
-#### Original study spatio-temporal metadata
-
-- `Spatial Coverage`: extent of original study
-- `Spatial Resolution`: resolution of original study
-- `Spatial Reference System`: spatial reference system of original study
-- `Temporal Coverage`: temporal extent of original study
-- `Temporal Resolution`: temporal resolution of original study
+- `Key words`: COVID-19, Disability, Race/ethnicity, Poverty, Reproducibility
+- `Subject`: Social and Behavioral Sciences: Geography: Geographic Information Sciences
+- `Date created`: 3/01/2025
+- `Spatial Coverage`: Continental US
+- `Spatial Resolution`: US Counties
+- `Spatial Reference System`: Contiguous USA Albers Equal Area projection EPSG:5070
+- `Temporal Coverage`: From 1/22/2020 to 8/1/2020
+- `Temporal Resolution`:  Rates were collected as one temporal unit.
 
 ## Study design
 
-Describe how the study relates to prior literature, e.g. is it a **original study**, **meta-analysis study**, **reproduction study**, **reanalysis study**, or **replication study**?
-
-Also describe the original study archetype, e.g. is it **observational**, **experimental**, **quasi-experimental**, or **exploratory**?
-
-Enumerate specific **hypotheses** to be tested or **research questions** to be investigated here, and specify the type of method, statistical test or model to be used on the hypothesis or question.
+This is a reproduction study to understand the links between race/ethnicity and disability and COVID-19 rates.
 
 ## Materials and procedure
 
 ### Computational environment
 
-Define the hardware, operating system, and software requirements for the research.
-Include citations to important software projects, plugins or packages and their versions.
+I will use the R version 4.4.2 with the following packages: "tidycensus", "tidyverse", "downloader", "sf", "classInt", "readr",
+  "here", "s2", "pastecs", "tmap", "SpatialEpi", "svDialogs",
+  "geepack", "knitr", "kableExtra", "foreign", "broom", "dotwhisker", "dotenv"
 
 ### Data and variables
 
-Describe the **data sources** and **variables** to be used.
-Data sources may include plans for observing and recording **primary data** or descriptions of **secondary data**.
-For secondary data sources with numerous variables, the analysis plan authors may focus on documenting only the variables intended for use in the study.
 
-Primary data sources for the study are to include ... .
-Secondary data sources for the study are to include ... .
-
-Each of the next subsections describes one data source.
 
 #### Primary data source1 name
 
