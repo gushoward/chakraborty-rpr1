@@ -194,8 +194,8 @@ missing data
 filter(acs_covid, is.na(bpov_pct)) %>% st_drop_geometry() %>% kable()
 
 # replace NA with 0
-acs_covid[is.na(acs_covid$bpov_pct), ]$bpov_pct <- 0
-acs_covid[is.na(acs_covid$apov_pct), ]$apov_pct <- 0
+acs_covid <- acs_covid |> replace.na(list(bpov_pct = 0,
+apov_pct = 0))
 ```
 
 <!-- COVID incidence Rate Map -->
@@ -251,8 +251,7 @@ tm_covid_rates
 ```
 
 
-
-Disability Map
+## Disability Map
 
 ```{r map-disability-rates, message = FALSE}
 # tm_disability_rates <- tm_shape(acs_covid) +
@@ -970,7 +969,7 @@ author_col <- read.dbf(here("data", "raw", "public","SatScan_output.dbf")) %>%
 
 # load SaTScan reproduced data
 # Download satscan data
-satscan_rpr_col <- read_sf(here("data", "raw", "public", "sat_scan_rpr.col.shp"))
+satscan_rpr_col <- read_sf(here("data", "derived","satscan", "sat_scan_rpr.col.shp"))
 
 # how many observations?
 cat(
@@ -1037,38 +1036,43 @@ satscan_rpr_col[which(satscan_rpr_col$NUMBER_LOC < 3), ]$NUMBER_LOC <- NA
 
 gini_circle <- satscan_rpr_col %>% filter(GINI_CLUST == 'T')
 hier_circle <- satscan_rpr_col %>% filter(GINI_CLUST == 'F')
+```
+
+```{r}
+## filter data so that nulls are removed ahead of time
+
 
 tm_author_clusters <-
   tm_shape(state) +
     tm_fill("gray98") +
-  tm_shape(acs_covid) +
-  tm_polygons(col = "GINI_CLUST",
+  tm_shape(acs_covid |> filter(!is.na(GINI_CLUST))) +
+  tm_polygons(fill = "GINI_CLUST",
+              fill.scale = tm_scale(
               labels = clus_labels,
-              border.col = "white",
+              values = c("tomato", "thistle3")),
+              col = "white",
               lwd = 0.5,
-              palette = c("tomato", "thistle3"),
               popup.vars = c("fips", "clusterID"),
-              colorNA = NULL,
-              title = "SaTScan Kulldorff COVID-19 Clusters\nCluster Centers") +
+              fill.legend = tm_legend(title = "SaTScan Kulldorff COVID-19 Clusters\nCluster Centers")) +
   tm_shape(state) +
     tm_borders("grey", lwd = 0.5) +
   tm_shape(gini_circle) +
     tm_borders(col = "thistle4") +
-    tm_text("NUMBER_LOC", size = 0.5) +
   tm_shape(hier_circle) +
     tm_borders(col = "tomato") +
-    tm_text("NUMBER_LOC", size = 0.5, ymod = 0.4) +
   tm_layout(
     legend.position = c("left", "bottom"),
     legend.title.size = 0.8,
     legend.text.size = 0.5
-  ) +
-  tm_add_legend('symbol',
-              	col = NA,
-              	border.col = c("tomato", "thistle4"),
-              	size = 0.7,
-              	labels = clus_labels,
-              	title="Cluster Extents")
+  ) 
+# +
+#   tm_add_legend('symbol',
+#               	col = NA,
+#               	border.col = c("tomato", "thistle4"),
+#               	size = 0.7,
+#               	labels = clus_labels,
+#               	title="Cluster Extents")
+# 
 
 tm_author_clusters
 
@@ -1126,7 +1130,7 @@ To answer this question, we must load the local SaTSCan results inclusive of all
 ```{r join-satscan-clusters-all-counties, message = F}
 # load local SaTScan reproduced data
 satscan_rpr_gis_t <- read_sf(
-  here("data", "derived", "public", "satscan", "sat_scan_rpr.gis.shp")
+  here("data", "derived", "satscan", "sat_scan_rpr.gis.shp")
 ) %>%
   st_drop_geometry() %>%
   select(fips = LOC_ID, CLU_RR, GINI_CLUST)
@@ -1272,6 +1276,18 @@ table(acs_covid$cluster_class, acs_covid$gini_class) %>%
   add_header_above(c("SpatialEpi" = 1, "SatScan" = 6)) %>%
   kable_styling(full_width = FALSE, row_label_position = "c")
 ```
+
+
+# END
+
+#Discussion and unplanned deviations
+
+Given the  differences across the results and some of the data, our analysis diverged from the original study in a number of ways. Despite reproducing the satscan package and the author's other data files
+For example, the GEE models that were used in the original Chakraborty study  
+
+The satscan clusters, in certain cases, misrepresented a cluster, assigning it to a larger region when the original study may have perscribed the Covid risk to that of only a singular county.
+
+
 
 Indeed, SpatialEpi has identified more than 300 counties with above normal risk that were not identified by SaTScan.
 Meanwhile, SaTScan identified 78 counties with above normal risk that were not identified by SpatialEpi.
@@ -1458,7 +1474,7 @@ Generalized Estimating Equation parameters:
 Load digitized version of Table 2 from the original publication.
 
 ```{r load-table2}
-table2 <- read.csv(here("data", "raw", "public", "chakraborty", "table2.csv"))
+table2 <- read.csv(here("data", "raw", "public", "table2.csv"))
 table2 <- table2 %>%
   arrange(row_i_first) #%>%
   #column_to_rownames("term")
