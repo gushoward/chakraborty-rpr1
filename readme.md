@@ -1,51 +1,34 @@
 If you use this template for research, please [cite it](template_reference.bib):
 > Kedron, P., & Holler, J. (2023). Template for Reproducible and Replicable Research in Human-Environment and Geographical Sciences. https://doi.org/10.17605/OSF.IO/W29MQ
 
-# Title of Study
+# Reproduction of Chakraborty 2021 analysis of unequal distribution of COVID-19 for people with disabilities
 
 ## Contributors
 
-- First Name Last Name\*, email address, @githubname, ORCID link, affiliated institution(s)
-- First Name Last Name, email address, @githubname, ORCID link, affiliated institution(s)
+- Gus Howard\*, augustush@middlebury.edu, @gushoward, github.com/gushoward, Middlebury College
 
-\* Corresponding author and creator
 
 ## Abstract
 
-Write a brief abstract about your research project.
-If the project is a reproduction or replication study, include the full citation with a statement
-This study is a *reproduction/replication* of:
-
-> citation to prior study
-
-A graphical abstract of the study could also be included as an image here.
+Chakraborty (2021) examines the relationship between COVID-19 incidence rates and the percentage of people with disabilities across U.S. counties, considering socio-demographic factors like race, ethnicity, poverty status, age, and sex. Using bivariate correlations and generalized estimating equation (GEE) models, the study finds significant positive associations between COVID-19 rates and socially vulnerable populations. This reproduction study aims to verify Chakraborty’s findings for policy, research, and educational purposes by replicating all analyses, including county-level COVID-19 distributions, statistical correlations, and GEE models. The data and code are publicly available on GitHub, ensuring transparency and accessibility for further study.
 
 ## Study Metadata
 
-- `Key words`: Comma-separated list of keywords (tags) for searchability. Geographers often use one or two keywords each for: theory, geographic context, and methods.
-- `Subject`: select from the [BePress Taxonomy](http://digitalcommons.bepress.com/cgi/viewcontent.cgi?article=1008&context=reference)
-- `Date created`: date when project was started
-- `Date modified`: date of most recent revision
-- `Spatial Coverage`: Specify the geographic extent of your study. This may be a place name and link to a feature in a gazetteer like GeoNames or OpenStreetMap, or a well known text (WKT) representation of a bounding box.
-- `Spatial Resolution`: Specify the spatial resolution as a scale factor, description of the level of detail of each unit of observation (including administrative level of administrative areas), and/or or distance of a raster GRID size
-- `Spatial Reference System`: Specify the geographic or projected coordinate system for the study
-- `Temporal Coverage`: Specify the temporal extent of your study---i.e. the range of time represented by the data observations.
-- `Temporal Resolution`: Specify the temporal resolution of your study---i.e. the duration of time for which each observation represents or the revisit period for repeated observations
-- `Funding Name`: name of funding for the project
-- `Funding Title`: title of project grant
-- `Award info URI`: web address for award information
-- `Award number`: award number
+- `Key words`: COVID-19, Disability, Race/ethnicity, Poverty, Reproducibility
+- `Subject`: Social and Behavioral Sciences: Geography: Geographic Information Sciences
+- `Date created`: 3/01/2025
+- `Spatial Coverage`: Continental US
+- `Spatial Resolution`: US Counties
+- `Spatial Reference System`: Contiguous USA Albers Equal Area projection EPSG:5070
+- `Temporal Coverage`: From 1/22/2020 to 8/1/2020
+- `Temporal Resolution`:  Rates were collected as one temporal unit.
 
 ## Related to
 
-- `OSF Project`:
-- `Pre-analysis Registration`:
-- `Post-analysis Report Registration`:
-- `Preprint`:
-- `Conference Presentation`:
-- `Publication`:
-- `Prior Study`:
-- `...`:
+- `OSF Project`: https://doi.org/10.17605/OSF.IO/S5MTQ
+- `Pre-analysis` Registration: https://doi.org/10.17605/OSF.IO/MJXHD
+- `Post-analysis` Report Registration: https://doi.org/10.17605/OSF.IO/647EX
+- `Prior Study`: https://doi.org/10.1016/j.dhjo.2020.101007
 
 ## Metadata for access
 
