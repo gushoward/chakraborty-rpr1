@@ -26,8 +26,8 @@ Chakraborty (2021) examines the relationship between COVID-19 incidence rates an
 ## Related to
 
 - `OSF Project`: https://doi.org/10.17605/OSF.IO/S5MTQ
-- `Pre-analysis` Registration: https://doi.org/10.17605/OSF.IO/MJXHD
-- `Post-analysis` Report Registration: https://doi.org/10.17605/OSF.IO/647EX
+- `Pre-analysis` Registration: https://github.com/gushoward/chakraborty-rpr1/blob/main/docs/report/analysis_plan.md
+- `Post-analysis` Report Registration: file:///Users/gushoward/Downloads/GITHUB/chakraborty-rpr1/docs/report/Chakraborty_reproduction.html
 - `Prior Study`: https://doi.org/10.1016/j.dhjo.2020.101007
 
 ## Metadata for access
