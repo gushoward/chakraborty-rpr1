@@ -3,6 +3,11 @@ title: "Chakroborty Repoduction"
 author: "Gus Howard"
 date: "2025-03-7"
 output: html_document
+editor_options:
+  markdown:
+    wrap: sentence
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../../docs/report") })
 ---
 
 
@@ -194,7 +199,7 @@ missing data
 filter(acs_covid, is.na(bpov_pct)) %>% st_drop_geometry() %>% kable()
 
 # replace NA with 0
-acs_covid <- acs_covid |> replace.na(list(bpov_pct = 0,
+acs_covid <- acs_covid |> replace_na(list(bpov_pct = 0,
 apov_pct = 0))
 ```
 
@@ -1020,7 +1025,7 @@ rm(satscan_rpr_col_t)
 
 **Unplanned deviation for reproduction**: Visualize the spatial distribution of the author-provided Kulldorff COVID-19 Clusters.
 
-```{r map--author-clusters}
+```{r map--author-clusters--1}
 # count frequencies of each cluster type
 clus_counts <- satscan_rpr_col %>%
   st_drop_geometry() %>%
@@ -1065,14 +1070,6 @@ tm_author_clusters <-
     legend.title.size = 0.8,
     legend.text.size = 0.5
   ) 
-# +
-#   tm_add_legend('symbol',
-#               	col = NA,
-#               	border.col = c("tomato", "thistle4"),
-#               	size = 0.7,
-#               	labels = clus_labels,
-#               	title="Cluster Extents")
-# 
 
 tm_author_clusters
 
@@ -1169,6 +1166,24 @@ It was necessary to divide the Hierarchical clusters from the GINI clusters to a
 
 Compare the SaTScan Hierarchical clusters to the SpatialEpi clusters.
 
+```{r map--author-clusters}
+# count frequencies of each cluster type
+clus_counts <- satscan_rpr_col %>%
+  st_drop_geometry() %>%
+  group_by(GINI_CLUST) %>%
+  summarize(n = n())
+
+# create labels including frequencies in brackets
+clus_labels <- c(paste0("Hierarchical (", clus_counts[1,2], ")"),
+            paste0("GINI Optimized (", clus_counts[2,2], ")"))
+
+# for clusters with only one county, erase the number of counties
+satscan_rpr_col[which(satscan_rpr_col$NUMBER_LOC < 3), ]$NUMBER_LOC <- NA
+
+gini_circle <- satscan_rpr_col %>% filter(GINI_CLUST == 'T')
+hier_circle <- satscan_rpr_col %>% filter(GINI_CLUST == 'F')
+```
+
 ```{r hierarchical-cluster-comparison-map, message = F}
 hier_clusters <- acs_covid %>%
   mutate(xcluster = case_when(
@@ -1190,7 +1205,6 @@ tm_spatialepi_hier <-
   tm_polygons(
     col = "xcluster",
     palette = c("wheat", "tomato", "thistle3"),
-    colorNA = NULL,
     title = "SaTScan Hierarchical and SpatialEpi Clusters",
     border.col = "white",
     lwd = 0.2,
@@ -1235,7 +1249,6 @@ tm_spatialepi_gini <-
   tm_polygons(
     col = "xcluster",
     palette = c("wheat", "tomato", "thistle3"),
-    colorNA = NULL,
     title = "SaTScan GINI Optimized and SpatialEpi Clusters",
     border.col = "white",
     lwd = 0.2,
@@ -1254,12 +1267,7 @@ tm_spatialepi_gini
 rm(gini_clusters)
 ```
 
-There is more agreement overall between SpatialEpi and SaTScan GINI Optimized clusters.
-The two algorithms agree the most for smaller and less significant clusters above the 95% confidence threshold.
-Because the SaTScan clusters are more limited in size, SaTScan detects several smaller clusters with gaps in place of the largest SpatialEpi clusters.
 
-Keeping in mind that the final analysis uses a classification of cluster relative risk for GEE models, are there important differences between the two results with regard to classification of risk?
-We can check by calculating cluster relative risk classes based on the SaTScan GINI clusters, and cross-tabulating with the SpatialEpi risk classes.
 
 ```{r compare-spatialepi-satscan}
 acs_covid <- acs_covid %>%
@@ -1282,545 +1290,6 @@ table(acs_covid$cluster_class, acs_covid$gini_class) %>%
 
 #Discussion and unplanned deviations
 
-Given the  differences across the results and some of the data, our analysis diverged from the original study in a number of ways. Despite reproducing the satscan package and the author's other data files
-For example, the GEE models that were used in the original Chakraborty study  
-
-The satscan clusters, in certain cases, misrepresented a cluster, assigning it to a larger region when the original study may have perscribed the Covid risk to that of only a singular county.
-
-
-
-Indeed, SpatialEpi has identified more than 300 counties with above normal risk that were not identified by SaTScan.
-Meanwhile, SaTScan identified 78 counties with above normal risk that were not identified by SpatialEpi.
-
-The maps and crosstabulation above indicate that there are important differences between the SaTScan and SpatialEpi computational environments for calculating secondary clusters.
-
-We summarize our understanding of the computational differences for default settings below, based on close examination of our software outputs, technical documentation for SaTScan, and the documentation and code repository for SpatialEpi.
-
-|                          |      SaTScan Hierarchical      |            SaTScan GINI            |                  SpatialEpi                  |
-|:----------------:|:----------------:|:----------------:|:----------------:|
-|     possible shapes      |  circle (default) or ellipse   |    circle (default) or ellipse     |                    circle                    |
-| possible cluster centers | locations with rates \> normal |   locations with rates \> normal   |                all locations                 |
-|   maximum cluster size   |          50% of cases          | varies, not exceeding 50% of cases |              50% of population               |
-|  maximum *p* of cluster  |              1.00              |                1.00                |                     0.05                     |
-|         distance         |     spherical great circle     |       spherical great circle       | spherical equidistant cylindrical projection |
-
-To further interrogate the differences in sets of secondary clusters, we must understand that theoretically each location (county), may be the center of many different circular clusters defined by different radii, starting with a radius of 0 and the one county at the center, and expanding until the maximum cluster size is reached.
-
-**SaTScan Hierarchical Clusters**
-
--   Select locations (counties) with above-normal COVID incidence rates
--   For each location, find log-likelihood of all possible cluster sizes (from minimum of 2 cases to maximum of 50% of cases) with *p* \< 1
--   For each location, select the cluster with the maximum log-likelihood, resulting in one possible cluster for each location with above-normal COVID incidence rates
--   Sort the remaining clusters by log-likelihood from greatest to least
--   Select the most likely cluster
--   Select secondary clusters by iterating over the remaining clusters, adding new clusters to the set of secondary clusters if they do not geographically overlap any of the clusters already identified as most likely or secondary (pg 68).
-
-**SaTScan GINI-Optimized Clusters**
-
--   Follow the same procedure as SaTScan Hierarchical clusters, but iterate the procedure with different maximum cluster sizes. By default the cluster sizes include 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 45, and 50 percent of cases. With the default setting, the result is 17 different sets of clusters.
--   For each set of clusters, calculate the GINI coefficient of the COVID-19 incidence inside the clusters vs outside the clusters.
--   Select the set of clusters with the highest GINI coefficient (i.e. the most difference between COVID-19 incidence inside the clusters vs outside the clusters).
-
-**SpatialEpi Clusters**
-
--   For all locations, calculate the log likelihood of all the possible clusters below the maximum cluster size (50% of population)
--   Select the clusters with *p* \< 0.05
--   Sort the remaining clusters by log-likelihood from greatest to least (line 186)
--   Select the most likely cluster
--   Select secondary clusters by iterating over the remaining clusters, adding new clusters to the set of secondary clusters if they do not geographically overlap any of the clusters already identified as most likely or secondary (line 199).
-
-The differences between these three approaches have very significant impacts on the results (see the differences in results in the **two maps** above) and it is impossible to control for all of the differences with the available parameters.
-Most fundamentally, SaTScan develops sets of secondary clusters from a universe of just one most likely cluster per location with no default limitation its statistical significance, whereas SpatialEpi may consider multiple possible cluster sizes for each location with a default limitation of maximum 0.05 *p* for each cluster.
-These fundamental differences are evident in the spatial distribution of clusters.
-For example, New York City is the most likely cluster in all analyses.
-For counties near New York, the radius of the most likely cluster is large and geographically overlaps New York City.
-Therefore, if only the most significant cluster radius is considered as a possible secondary cluster for counties near New York City, all such clusters are disqualified by their geographical overlap.
-This is what happens in the SaTScan Hierarchical Clusters model, for which the next nearest clusters are in Ohio and Virginia.
-In the SaTScan GINI-optimized model, the maximum cluster size is apparently smaller, such that the most likely cluster in New York City is also smaller.
-This change allows for two other non-overlapping secondary clusters in Rhode Island and New Jersey.
-In contrast, the SpatialEpi algorithm still considers a variety of possible cluster sizes for each county, allowing for detection of smaller clusters adjacent to more significant ones.
-
-Of course, the *relative risk* score of each cluster is contingent on the cluster size, so each difference in geographic configuration of clusters also impacts the cluster risk classification of individual locations.
-The most stable results are for the most likely clusters in distinct regions (New York City, Southeast U.S., Southern California & Nevada), while the most variability appears for secondary clusters close enough for their most likely radius to overlap the more likely clusters.
-The circular shape could be considered a major limitation of Kulldorff cluster detection, for which the SaTScan methodology enhances the limitation by constraining the possibility of nearby clusters while the SpatialEpi methodology can detect smaller adjacent secondary clusters.
-
-The high significance threshold in the default SaTScan analysis allows the inclusion of many small clusters with low likelihoods, adding noise to the results.
-This could be controlled by overriding the maximum *p* value parameter.
-Combining all of the default parameters, SaTSCan includes small clusters of relatively low-risk counties in the Midwest, but excludes relatively high-risk counties adjacent to the major clusters of New York, the Southeast, and Southern California/Nevada.
-This problem does not exist in the SpatialEpi implementation, and the SpatialEpi parameter *alpha level* parameter cannot be practically increased to `1` to match the SatSCan default.
-This is because SpatialEpi does not filter counties by those with local relative risk greater than 1---therefore an *alpha value* of `1` results in *all* counties being included as clusters.
-
-In sum, there are three construct validity issues with the original study's COVID-19 high-risk clusters as implemented in SaTScan.
-
-1.  Two sets of overlapping secondary clusters are included in the SaTScan output: hierarchical clusters and clusters optimized by GINI coefficient.
-2.  Only the 96 counties at the center of a cluster are considered in the risk classification.
-3.  The geographic patterns and cluster relative risk scores of secondary clusters are limited to circles or ellipses and are apparently sensitive to both the geographic shape and situation of high-risk clusters and to subjective decisions in parameters and algorithms.
-
-## Preprocess data for GEE modelling
-
-**Unplanned deviation for reanalysis**: Based on the three observations above, we think that it would be more valid to choose one set of secondary clusters based on a single method rather than combining a set of hierarchical clusters with a set of GINI optimized clusters.
-We also think that it would be more valid to include risk levels for all counties within a cluster (i.e. all counties within any of the circles above), rather than only the county at the center of a cluster.
-Finally, we think it would be more valid to treat clusters as a single category rather than five tiers of above-normal risk.
-
-To complete the reproduction/reanalysis study, we will therefore calculate and compare multiple versions of the GEE models:
-
-1.  Original study results
-2.  Original study data in geepack
-3.  SpatialEpi cluster classification in geepack
-4.  SpatialEpi binary clusters in geepack
-
-### Unique GEE cluster IDs
-
-First, calculate GEE cluster IDs.
-
-We have already calculated: - `rp_clusID` based on our SpatialEpi clusters - `ss_clusID` based on our SaTScan cluster centers, and shown to be identical to the original author's data - `gini_clusID` based on our SaTScan GINI-optimized clusters
-
-### Filter and standardize data
-
-Second, filter the data for non-zero COVID-19 rates and z-score standardize the independent variables.
-This accomplishes step 10 of the workflow diagram.
-
-**Unplanned deviation for reproduction:** We assumed that we should filter for COVID rates \> 0 first and then calculate z-scores, however after comparing data in the next code block, we realized that the original study had *first* calculated z-scores and *then* filtered for COVID rates \> 0.
-Therefore, to align with the original study, in the next code block we first calculate z-scores and then filter for COVID rates \> 0.
-
-```{r filter-standardize}
-gee_data <- acs_covid %>%
-# filter(covid_rate > 0) %>% # moved filtering to after z-score calculation
-  mutate(
-    z_white_pct = scale(white_pct),
-    z_black_pct = scale(black_pct),
-    z_native_pct = scale(native_pct),
-    z_asian_pct = scale(asian_pct),
-    z_other_pct = scale(other_pct),
-    z_non_hisp_white_pct = scale(non_hisp_white_pct),
-    z_hisp_pct = scale(hisp_pct),
-    z_non_hisp_non_white_pct = scale(non_hisp_non_white_pct),
-    z_bpov_pct = scale(bpov_pct),
-    z_apov_pct = scale(apov_pct),
-    z_pct_5_17 = scale(pct_5_17),
-    z_pct_18_34 = scale(pct_18_34),
-    z_pct_35_64 = scale(pct_35_64),
-    z_pct_65_74 = scale(pct_65_74),
-    z_pct_75 = scale(pct_75),
-    z_male_pct = scale(male_pct),
-    z_female_pct = scale(female_pct)
-  ) %>%
-  filter(covid_rate > 0) # moved filtering from before z-score calculation
-```
-
-Compare independent variables for GEE models by subtracting the original values from the reproduced values, and finding the average and standard deviation of difference for each variable.
-
-```{r compare-indp-vars}
-# subtract original data matrix (table) from reproduced data matrix (table)
-# select, filter, and arrange (sort) data to make identical matrix sizes with
-# identical order of observations (counties)
-gee_diff <-
-  (gee_data %>%
-    st_drop_geometry() %>%
-    arrange(as.integer(fips)) %>%
-    select(starts_with("z_"))  -
-  original_gee %>%
-    filter(Cases > 0) %>%
-    arrange(COUNTY_FIPS) %>%
-    select(starts_with("ZPD"))) %>%
-  round(digits = 3)
-
-# print results
-# this would be better as a table
-cat("Summary of difference between reproduction independent variables and original independent variables")
-cat("\n")
-cat("Mean:\n")
-colMeans(gee_diff) %>% round(digits = 3)
-cat("\nStandard deviation:\n")
-apply(gee_diff, 2, sd) %>% round(digits = 3)
-```
-
-When we had filtered for COVID rates \> 0 first and then z-score standardized second, the means of differences ranged from -0.012 to 0.004, and standard deviations of differences ranged from 0.000 to 0.016.
-
-After changing the order to first z-score standardize and then filter for COVID rates \> 0, we observed no mean difference between our reproduced variables and the original variables, and we find no standard deviation \> 0.001 for the difference between reproduction independent variables and original variables.
-There are no major differences between the independent variables.
-
-#### Save final derived data
-
-Optionally, you may save the preprocessed data to `data/raw/public/gee_data.gpkg`
-
-```{r save preprocessed COVID cluster data, eval = FALSE}
-write_sf(gee_data, here("data", "derived", "public", "gee_data.gpkg"))
-# add saving acs_covid data
-```
-
-Optionally, you may load the preprocessed data from `data/raw/public/gee_data.gpkg`
-
-```{r load preprocessed COVID cluster data, eval = FALSE}
-gee_data <- read_sf(here("data", "derived", "public", "gee_data.gpkg"))
-```
-
-## GEE models
-
-The generalized estimating equation (GEE) models were used to test association between intra-categorical rates of disability and COVID-19 incidence rates while accounting for spatial clustering.
-A separate hypothesis was formulated for each type of subcategorization of PwDs, numbered H2.1 through H2.5 in Table 4.
-
-As specified by the author, "GEEs extend the generalized linear model to accommodate clustered data, in addition to relaxing several assumptions of traditional regression (i.e., normality)".
-Additionally, the author noted that "clusters of observations must be defined based on the assumption that observations within a cluster are correlated while observations from different clusters are independent." All five GEE models were specified with exchangeable correlation matrices, gamma distributions, and logarithmic link function.
-
-Generalized Estimating Equation parameters:
-
-"The **'exchangeable' correlation matrix** was selected for the results reported here, since this specification yielded the best statistical fit based on the QIC (quasi- likelihood under the independence) model criterion." (Chakraborty 2021, Methods paragraph 5)
-
-"The **gamma distribution** with **logarithmic link function** was chosen for all GEEs since this model specification provided the lowest QIC value." (Chakraborty 2021, Methods paragraph 5)
-
-### Original Table 2
-
-Load digitized version of Table 2 from the original publication.
-
-```{r load-table2}
-table2 <- read.csv(here("data", "raw", "public", "table2.csv"))
-table2 <- table2 %>%
-  arrange(row_i_first) #%>%
-  #column_to_rownames("term")
-
-table2[, 3:ncol(table2)] %>%
-  kable(caption = "Original Publication Table 2",
-        align = "c") %>%
-  kable_styling()
-```
-
-### GEE Function
-
-Define a function for calculating and summarizing five GEE models
-
-```{r gee-functions}
-onegee <- function(gee_data, dep_var, id, term_names) {
-
-  # sort data frame by clustering variable, a requirement of GEE modeling
-  gee_data <- gee_data %>% arrange({{ id }})
-
-  # create list of models and their independent variables
-  model_names <- c(
-    "race",
-    "ethnicity",
-    "poverty status",
-    "age",
-    "biological sex"
-  )
-
-  ind_vars <- c(
-    "z_white_pct + z_black_pct + z_native_pct + z_asian_pct + z_other_pct",
-    "z_non_hisp_white_pct + z_hisp_pct + z_non_hisp_non_white_pct",
-    "z_bpov_pct + z_apov_pct",
-    "z_pct_5_17 + z_pct_18_34 + z_pct_35_64 + z_pct_65_74 + z_pct_75",
-    "z_male_pct + z_female_pct"
-  )
-
-  gee_models <- data.frame(model_names, ind_vars)
-  gee_model <- list()
-
-  # empty data frame for storing model outputs
-  coefficients <- data.frame()
-  qics <- data.frame(model_names, qic = c(1:5))
-
-  # run each model and save outputs
-  for(i in 1:nrow(gee_models)){
-
-    # run model
-    gee_model[[i]] <- geeglm(
-      formula = as.formula(paste(dep_var, "~", gee_models[i, "ind_vars"])),
-      data = gee_data,
-      id = {{ id }}, # cluster IDs
-      family = Gamma(link = "log"),
-      corstr = "exchangeable",
-    )
-
-    # tidy and save variable coefficients, margins of error, significance...
-    gee_table <- tidy(gee_model[[i]], conf.int = TRUE)
-    gee_table[1, 1] <- paste(gee_models[i, 1], "model intercept")
-    coefficients <- coefficients %>% rbind(gee_table)
-
-    # QIC: quasi-likelihood under the independence model information criterion
-    QIC(gee_model[[i]])
-    qics[i, 2] <- QIC(gee_model[[i]])[1]
-
-    gee_model[[i]]$model <- NA
-  }
-
-  # calculate significance levels
-  coefficients$stars <- as.numeric(
-    as.character(
-      cut(coefficients$p.value,
-        breaks = c(-0.1, 0.01, 0.05, 1),
-        labels = c(2, 1, 0)
-      )
-    )
-  )
-
-  # reorder columns to match table2 in publication and round to 3 sig. digits
-  coefficients <- coefficients %>%
-    select("estimate", "std.error", starts_with("conf"), "stars", "p.value") %>%
-    round(digits = 3)
-
-  # add tidy term names
-  coefficients <- bind_cols(term = term_names, coefficients)
-
-  # combine coefficient results and QIC results into a list
-  return_data <- list(
-    "coefficients" = coefficients,
-    "QICs" = qics,
-    "models" = gee_model
-    )
-
-  return(return_data)
-}
-```
-
-### Original Clusters and Original COVID-19 Rate
-
-Calculate GEE models with: - Clustering: SaTScan cluster centers & State ID - Dependent variable: original COVID-19 incidence (including errors).
-
-```{r gee-original-clusters-original-incidence}
-gee_or_clus_ordep <- gee_data %>% onegee(
-                    dep_var = "or_incidence",
-                    id = gee_data$ss_clusID,
-                    term_names = table2$term)
-gee_or_clus_ordep$coefficients %>%
-  kable(caption = "Original Cluster IDs and Original COVID-19 Incidence",
-        align = "c") %>%
-  kable_styling()
-```
-
-### Original Clusters and Corrected COVID-19 Rate
-
-Calculate GEE models with: - Clustering: SaTScan cluster centers & State ID - Dependent variable: reproduced COVID-19 incidence (corrected errors).
-
-```{r gee-original-clusters-reproduced-incidence}
-gee_or_clus_rpdep <- onegee(gee_data,
-                    dep_var = "covid_rate",
-                    id = gee_data$ss_clusID,
-                    term_names = table2$term)
-gee_or_clus_rpdep$coefficients %>%
-  kable(caption = "Original Cluster IDs and Reproduced COVID-19 Incidence",
-        align = "c") %>%
-  kable_styling()
-```
-
-### GINI Clusters and Fixed COVID-19 Rate
-
-Calculate GEE models with: - Clustering: Reproduced SaTScan GEE clusters & State ID - Dependent variable: reproduced COVID-19 incidence (fixed errors).
-
-```{r gee-gini-clusters-reproduced-incidence}
-gee_gini_clus_rpdep <- onegee(gee_data,
-                    dep_var = "covid_rate",
-                    id = gee_data$gini_clusID,
-                    term_names = table2$term)
-gee_gini_clus_rpdep$coefficients %>%
-  kable(caption = "Reproduced SaTScan GINI Cluster IDs and Reproduced COVID-19 Incidence",
-        align = "c") %>%
-  kable_styling()
-```
-
-### SpatialEpi Clusters and Fixed COVID-19 Rate
-
-Calculate GEE models with: - Clustering: Reproduced SpatialEpi clusters & State ID - Dependent variable: reproduced COVID-19 incidence (fixed errors).
-
-```{r gee-spatialepi-clusters-reproduced-incidence}
-gee_rp_clus_rpdep <- onegee(gee_data,
-                    dep_var = "covid_rate",
-                    id = gee_data$rp_clusID,
-                    term_names = table2$term)
-gee_rp_clus_rpdep$coefficients %>%
-  kable(caption = "Reproduced SpatialEpi Cluster IDs and Reproduced COVID-19 Incidence",
-        align = "c") %>%
-  kable_styling()
-```
-
-### Compare GEE results
-
-**Unplanned deviation for reanalysis**: Generate dot-and-whisker plot of coefficients for each of the model variations for efficient visual comparison of coefficients across each model.
-
-```{r dotwhisker-comparison, message=FALSE}
-# create summary data frame compatible with dotwhisker package functions
-# starting with original study results
-t2whisker <- table2 %>%
-  mutate(model = "Original Study") %>%
-  select(-c(starts_with("row"), "wald_chi_square", "p_stars"))
-
-geewhisker <- bind_rows(
-  mutate(gee_or_clus_ordep$coefficients,
-         model = "Switch to R Geepack"),
-  mutate(gee_or_clus_rpdep$coefficients,
-         model = "Correct COVID Incidence"),
-  mutate(gee_gini_clus_rpdep$coefficients,
-         model = "SaTScan GINI-Optimized Clusters"),
-  mutate(gee_rp_clus_rpdep$coefficients,
-         model = "SpatialEpi Clusters")) %>%
-  select(1:5, "model")
-
-geewhisker <- bind_rows(t2whisker, geewhisker) %>%
-  filter(!grepl("intercept", term))
-
-# generate create dot whisker plot
-geewhisker_fig <- geewhisker %>%
-  dwplot(dodge_size = 0.6,
-         vline = geom_vline(
-           xintercept = 0,
-           colour = "grey60",
-           linetype = 2
-       )) +
-    scale_colour_brewer(type = "div",
-                        palette = "RdYlBu",
-                        name = "Model Variations") +
-    theme_bw() +
-    xlab("Coefficient")
-
-geewhisker_fig
-
-rm(t2whisker)
-```
-
-The figure above presents five variations of the original model, beginning with the results reported in the initial study. The first two modified models make incremental changes that align closely with the objectives of a reproduction study. The most substantial differences arose from a change in computational environment—from SPSS to the *geepack* package in R—which significantly altered coefficient magnitudes. Notably, the positive coefficient for Hispanic individuals dropped below its original confidence interval, while the negative coefficients for "Above poverty level" and "Male" increased to the outer bounds of their original intervals. In contrast, correcting a known error in COVID-19 incidence rates for 13 counties had minimal impact on the coefficient estimates.
-
-More substantial reanalyses involved redefining COVID-19 clusters—first using all counties in the SaTScan GINI-Optimized clusters and then using counties from the SpatialEpi clusters. These revisions further reduced the size of most coefficients, likely due to improved spatial dependence control. The most notable changes occurred in the Ethnicity model, where the Hispanic and Non-Hispanic White coefficients fell beyond their original confidence intervals, and the Hispanic coefficient lost statistical significance. The "Above poverty level" and "Male" coefficients also increased beyond their initial confidence bounds. Despite these shifts, several coefficients remained robust and significant across all changes, including those for Black, Native American, Non-Hispanic non-White, Below poverty level, and Female individuals—groups associated with greater vulnerability. Meanwhile, consistently negative coefficients for White, Non-Hispanic White, Above poverty level, and Male individuals suggest intersections with less vulnerable identities. Interestingly, both coefficients for elderly individuals with disabilities also remained robustly negative, contrary to expectations.
-
-
-### Interpret GEE Model
-
-```{r residuals}
-# create data frame with residuals
-gee_resid <- data.frame(
-  select(gee_or_clus_rpdep$models[[1]]$data, covid_rate, ss_clusID),
-  data.frame(fitvals = gee_or_clus_rpdep$models[[1]]$fitted.values),
-  data.frame(residual = gee_or_clus_rpdep$models[[1]]$residual),
-  data.frame(working = residuals(gee_or_clus_rpdep$models[[1]], type = "working")),
-  data.frame(response = residuals(gee_or_clus_rpdep$models[[1]], type = "response")),
-  data.frame(pearson = residuals(gee_or_clus_rpdep$models[[1]], type = "pearson"))
-) %>%
-  mutate(
-    my_working = (covid_rate - fitvals) / fitvals,
-    my_pearson = response * (sqrt(gee_or_clus_rpdep$models[[1]]$prior.weights)) / sqrt(fitvals^2)
-  ) %>%
-  st_sf()
-
-# working residual is the model residual (r) from gee, BUT HOW IS THIS CALCULATED?
-# it is not simply the response residual normalized by the fitted value as the
-# datascienceblog suggests
-# response residual is: y(observed value) - fitted value
-# my working residual normalizes response residual by fitted value, and effectively
-# the code version of pearsons does the same because the prior weights are all 1
-# if the datascienceblog is correct, the code pearson's residual should be divided by the square root of the fitted value.
-# code: https://github.com/cran/geepack/blob/master/R/geeglm.R
-# blog: https://www.datascienceblog.net/post/machine-learning/interpreting_generalized_linear_models
-```
-
-```{r map-residuals}
-tm_gee_residuals <- tm_shape(gee_resid) +
-  tm_polygons("response",
-    title = "Race Model Residuals",
-    style = "equal",
-    n = 7,
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "RdBu",
-    legend.hist = FALSE,
-    midpoint = 0
-  ) +
-  tm_shape(state) +
-    tm_borders("grey", lwd = .5) +
-  tm_layout(
-    legend.position = c("left", "bottom"),
-    legend.title.size = 0.8,
-    legend.text.size = 0.5,
-    legend.width = 0.25,
-    legend.hist.size = 0.5,
-    legend.hist.height = 0.15
-  )
-
-tm_gee_residuals
-```
-
-Calculate variance, covariance, correlation, and weights
-
-```{r weights}
-# calculate k number of observations per cluster
-gee_resid <- gee_resid %>%
-  group_by(ss_clusID) %>%
-  mutate(k = n()) %>%
-  ungroup()
-
-grps <- gee_resid %>% st_drop_geometry() %>% select(ss_clusID, residual = residual)
-
-# create mask matrix
-n <- length(gee_resid$ss_clusID)
-# m <- matrix(nrow = n, ncol = n)
-
-# this is very inefficient, but this makes matrix of equal clusID's:
-# just need to omit the bottom-left of matrix and the diagonal
-# selecting for rows 80-90 to help w debugging
-m <- (outer(grps$ss_clusID, grps$ss_clusID, "==") &
-  outer(rownames(grps), rownames(grps), "<"))
-
-# calculate denominators
-covar_d <- sum(m, na.rm = TRUE) - 1
-
-# variance
-v <- sum(grps$residual^2) / (n - 1)
-# covariance
-c <- sum(outer(grps$residual, grps$residual, "*") * m, na.rm = TRUE) / covar_d
-# correlation
-r <- c / v
-
-# calculate weights
-gee_resid <- gee_resid %>%
-  mutate(w = 1 / (1 + (k - 1) * r))
-```
-
-Map each county's weight in GEE model.
-
-```{r map-weights}
-tm_gee_weights <- tm_shape(gee_resid) +
-  tm_polygons("w",
-    title = "Race Model Weights",
-    style = "jenks",
-    border.alpha = .2,
-    lwd = 0.2,
-    palette = "Oranges",
-    legend.hist = FALSE,
-    midpoint = 0
-  ) +
-  tm_shape(state) +
-    tm_borders("grey", lwd = .5) +
-  tm_layout(
-    legend.position = c("left", "bottom"),
-    legend.title.size = 0.8,
-    legend.text.size = 0.5,
-    legend.width = 0.25,
-    legend.hist.size = 0.5,
-    legend.hist.height = 0.15
-  )
-
-tm_gee_weights
-
-# re
-```
-
-```{r save-figures, eval = F}
-# save figures as image files
-# obviously this could be made into a for loop
-# add height, width, and dpi parameters to tmap_save to meet criteria for particular publications.
-tmap_options(unit = "in")
-tmap_save(tm_author_clusters, here("results", "figures", "tm_author_clusters.png"))
-tmap_save(tm_covid_rates, here("results", "figures", "tm_covid_rates.png"))
-tmap_save(tm_disability_rates, here("results", "figures", "tm_disability_rates.png"))
-tmap_save(tm_spatialepi_clusters, here("results", "figures", "tm_spatialepi_clusters.png"))
-tmap_save(tm_spatialepi_gini, here("results", "figures", "tm_spatialepi_gini.png"))
-tmap_save(tm_spatialepi_hier, here("results", "figures", "tm_spatialepi_hier.png"))
-tmap_save(tm_spatialepi_cluster_risk_class, here("results", "figures", "tm_spatialepi_cluster_risk_class.png"))
-tmap_save(tm_spatialepi_local_risk_class, here("results", "figures", "tm_spatialepi_local_risk_class.png"))
-ggsave(here("results", "figures", "plot_coefficients.png"), geewhisker_fig)
-```
-
-# Discussion
-
-## Bias and threats to validity
-
-
-
+Given the  differences across the results and some of the data, our analysis diverged from the original study in a number of ways. Despite reproducing the satscan package and the author's other data files, discrepancies with results were found. The satscan clusters, in certain cases, misrepresented a cluster, assigning it to a larger region when the original study may have perscribed the Covid risk to that of only a singular county. On the other hand, the summary statistics did align with those from the original study and many of the clusters were aligned. There is more agreement overall between SpatialEpi and SaTScan GINI Optimized clusters.
+The two algorithms agree the most for smaller and less significant clusters above the 95% confidence threshold. Because the SaTScan clusters are more limited in size, SaTScan detects several smaller clusters with gaps in place of the largest SpatialEpi clusters.
 
